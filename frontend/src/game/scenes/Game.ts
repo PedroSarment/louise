@@ -289,9 +289,9 @@ export class Game extends Scene {
         this.boxBraille = this.add.image(844, 330, 'Menu1').setDisplaySize(303.8, 308.7).setOrigin(0.5);
     
 
-        this.renderClueText();
         this.renderBrailleTranslation();
         this.currentChar = this.puzzleSequence[0];
+        this.renderClueText();
 
         // Initialize first puzzle
         this.initializePuzzleBoard();
@@ -380,14 +380,93 @@ export class Game extends Scene {
     
     // sentence text space
     private renderClueText(): void {
-        this.add.text(200, 330, this.chosenClue, {
-            fontFamily: 'Love Light',
-            fontSize: '40px',
-            color: '#000000',
-            wordWrap: { width: 280, useAdvancedWrap: true },
-            align: 'center'
-        }).setOrigin(0.5);
-    }   
+        // Remove existing text if any
+        if (this.clueTextGroup) {
+            this.clueTextGroup.destroy(true);
+        }
+        
+        // Create new container
+        this.clueTextGroup = this.add.container(0, 0);
+        
+        // Get dimensions from the background image
+        const boxWidth = this.boxClueText.displayWidth;
+        const boxHeight = this.boxClueText.displayHeight;
+        const padding = 30; // Padding from edges
+        const maxWidth = boxWidth - (padding * 2);
+        
+        // Split the clue into words
+        const words = this.chosenClue.split(' ');
+        const lineHeight = 40;
+        const letterSpacing = 10;
+        const wordSpacing = 15;
+        
+        let x = 0;
+        let y = 0;
+        let lineWidth = 0;
+        let lines = 1;
+        
+        // Calculate how many characters we can fit per line
+        const charsPerLine = Math.floor(maxWidth / letterSpacing);
+        
+        // Track absolute character index for the entire text
+        let charIndex = 0;
+        
+        // Get the position of the current character we're trying to solve
+        const currentCharPosition = this.missingBraillePositions[this.currentChar];
+        console.log(currentCharPosition);
+        
+        // Process each word
+        for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+            const word = words[wordIndex].toUpperCase();
+            const wordWidth = word.length * letterSpacing;
+            
+            // Check if we need to start a new line
+            if ((lineWidth + wordWidth) > maxWidth) {
+                x = 0;
+                y += lineHeight;
+                lineWidth = 0;
+                lines++;
+            }
+            
+            // Process each letter in the word
+            for (let letterIndex = 0; letterIndex < word.length; letterIndex++) {
+                const letter = word[letterIndex];
+                
+                // Check if this letter is the current puzzle character (direct position comparison)
+                const isCurrentPuzzleLetter = charIndex === currentCharPosition;
+                
+                console.log(isCurrentPuzzleLetter);
+                // Create text object for this letter with appropriate color
+                const letterText = this.add.text(x, y, letter, {
+                    color: isCurrentPuzzleLetter ? '#FF0000' : '#000000', // Orange highlight or black
+                });
+                
+                // Add to container
+                this.clueTextGroup.add(letterText);
+                
+                // Update position for next letter
+                x += letterSpacing;
+                lineWidth += letterSpacing;
+                
+                // Increment character index
+                charIndex++;
+            }
+            
+            // Add space after word (except for last word)
+            if (wordIndex < words.length - 1) {
+                x += wordSpacing - letterSpacing;
+                lineWidth += wordSpacing - letterSpacing;
+                charIndex++; // Account for space character
+            }
+        }
+        
+        // Center the text container within the background box
+        const totalHeight = lines * lineHeight;
+        this.clueTextGroup.setPosition(
+            this.boxClueText.x - (maxWidth / 2),
+            this.boxClueText.y - (totalHeight / 2) + 10 // Small vertical adjustment
+        );
+    }
     
 
     // braille text space
@@ -503,6 +582,7 @@ export class Game extends Scene {
     
                 this.initializePuzzleBoard();
                 this.renderPuzzleBoard();
+                this.renderClueText();
             
             // No next char, end of game
             } else {
