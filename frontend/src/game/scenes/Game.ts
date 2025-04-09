@@ -548,8 +548,6 @@ export class Game extends Scene {
         if (success) {
             roomService.getRoom().addPointToUser(1);
 
-            // takes possible try again text off the screen
-            this.tryAgainText.setVisible(false);
 
             // remakes the braille array to fill the current empty char
             for (let i = 0; i < this.brailleArray.length; i++) {
